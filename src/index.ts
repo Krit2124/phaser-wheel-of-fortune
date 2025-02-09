@@ -6,9 +6,9 @@ const existingCanvas = document.getElementById('game-canvas') as HTMLCanvasEleme
 if (existingCanvas) {
   const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.WEBGL,
-    width: 700,
+    width: window.innerWidth,
     height: window.innerHeight,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F6F6F6',
     scene: [GameScene],
     canvas: existingCanvas,
   };

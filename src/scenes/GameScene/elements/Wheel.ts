@@ -85,17 +85,20 @@ export default class Wheel extends Phaser.GameObjects.Container {
     if (this.isSpinning) return;
     this.isSpinning = true;
 
-    const randomSpins = Phaser.Math.Between(3, 5);
-    const targetAngle = randomSpins * 360 + Phaser.Math.Between(0, 360);
+    const randomSpins = Phaser.Math.Between(3, 5);  // Сколько раз колесо должно прокрутиться
+    const targetAngle = randomSpins * 360 + Phaser.Math.Between(0, 360);  // Случайный угол вращения
 
     this.scene.tweens.add({
       targets: this,
       angle: targetAngle,
       duration: 4000,
       ease: "Cubic.easeOut",
-      onComplete: () => {
-        this.isSpinning = false;
-      },
+      onComplete: () => this.onSpinComplete(),
     });
+  }
+
+  private onSpinComplete() {
+    this.isSpinning = false;
+    this.emit("spinComplete");
   }
 }
