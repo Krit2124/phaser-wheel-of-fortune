@@ -1,12 +1,17 @@
-import Phaser from "phaser";
-import GameScene from "./scenes/GameScene";
+import Phaser from 'phaser';
+import { GameScene } from './scenes/GameScene';
 
-const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
-  width: 700,
-  height: 1180,
-  backgroundColor: "#ffffff",
-  scene: [GameScene],
-};
+const existingCanvas = document.getElementById('game-canvas') as HTMLCanvasElement | null;
 
-export default new Phaser.Game(config);
+if (existingCanvas) {
+  const config: Phaser.Types.Core.GameConfig = {
+    type: Phaser.WEBGL,
+    width: 700,
+    height: window.innerHeight,
+    backgroundColor: '#ffffff',
+    scene: [GameScene],
+    canvas: existingCanvas,
+  };
+
+  new Phaser.Game(config);
+}

@@ -7,8 +7,34 @@
       content="width=device-width, initial-scale=1.0"
     />
     <title>Колесо Фортуны</title>
+    <style>
+      @font-face {
+        font-family: 'Baloo';
+        src: url('/fonts/baloo-cyrillic.ttf') format('truetype');
+        font-weight: 400;
+      }
+
+      @font-face {
+        font-family: 'SFCompactText';
+        src: url('/fonts/SF-Compact-Text-Bold.ttf') format('truetype');
+        font-weight: bold;
+      }
+
+      @font-face {
+        font-family: 'SFCompactRounded';
+        src: url('/fonts/SF-Compact-Rounded-Bold.ttf') format('truetype');
+        font-weight: bold;
+      }
+
+      body {
+        font-family: 'Baloo', 'SFCompactRounded', sans-serif;
+      }
+    </style>
   </head>
   <body>
     <script src="bundle.js"></script>
+    <canvas
+      id="game-canvas"
+    ></canvas>
   </body>
 </html>
