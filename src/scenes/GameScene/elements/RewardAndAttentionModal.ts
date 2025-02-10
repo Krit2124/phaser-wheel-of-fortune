@@ -6,6 +6,7 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
   private confettiGroup: Phaser.GameObjects.Image[] = [];
   private confettiTimers: Phaser.Time.TimerEvent[] = [];
   private onCloseModal?: () => void;
+
   private background!: Phaser.GameObjects.Graphics;
   private shining!: Phaser.GameObjects.Image;
   private victoryImage!: Phaser.GameObjects.Image;
@@ -20,6 +21,7 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
     reward: Reward | null,
     // Параметр на случай использования модалки для уведомления о закончившихся попытках
     isOutOfAttempts = false,
+    // Функция на случай, если при закрытии модалки нужно сделать какое-то специфичное действие
     onCloseModal?: () => void,
   ) {
     super(scene, 0, 0);
@@ -63,10 +65,10 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
         ease: 'Linear',
       });
 
-      // Украшение сверху
+      // Украшение для названия награды
       this.victoryImage = scene.add.image(
         scene.cameras.main.centerX,
-        0,
+        0, // Потом при масштабировании Y изменится
         'victory_window',
       );
       this.add(this.victoryImage);
@@ -75,7 +77,7 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
       this.rewardName = scene.add
         .text(
           scene.cameras.main.centerX,
-          this.victoryImage.displayHeight * 0.83,
+          this.victoryImage.displayHeight * 0.83, // Примерная высота, чтобы попасть в ленточку на украшении
           reward.name,
           {
             fontSize: '42px',
@@ -92,7 +94,7 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
         .setScale(2.5);
       this.add(this.rewardImage);
 
-      // Количество
+      // Количество награды
       this.rewardAmount = scene.add
         .text(
           scene.cameras.main.centerX,
@@ -109,7 +111,8 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
         .setStroke('#00377D', 6);
       this.add(this.rewardAmount);
     } else {
-      // Текстовое сообщение в центре (для пустого слота или окончания попыток)
+      // Текстовое сообщение в центре
+      // (для пустого слота или окончания попыток)
       const messageText = isOutOfAttempts
         ? 'У вас закончились\nпопытки'
         : 'Вы ничего не\nвыиграли. Повезет в\nследующий раз';
@@ -148,15 +151,15 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
 
     // Применяем изменения для адаптивности
     const { targetScale } = findScale();
-
     this.updateAfterResizing(targetScale);
   }
 
+  // Функция для спавна конфетти
   private spawnConfetti(scene: Phaser.Scene) {
     const screenWidth = scene.cameras.main.width;
     const screenHeight = scene.cameras.main.height;
 
-    // Определяем количество конфетти по ширине экрана
+    // Определяем оптимальное количество конфетти на каждую половину экрана по его ширине
     const halfScreen = screenWidth / 2;
     let confettiCount = Phaser.Math.Linear(
       9,
@@ -190,6 +193,7 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
     }
   }
 
+  // Спавн одной единицы конфетти
   private createConfetti(scene: Phaser.Scene, x: number, screenHeight: number) {
     const confettiTextures = ['confetti_1', 'confetti_2', 'confetti_3', 'confetti_4'];
     const texture = Phaser.Math.RND.pick(confettiTextures);
@@ -225,6 +229,7 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
     confetti.setData('swingTween', swingTween);
   }
 
+  // Правила для масштабирования модалки и её элементов
   public updateAfterResizing(targetScale: number) {
     const { width, height } = this.scene.scale;
 
@@ -233,7 +238,7 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
     this.background.fillStyle(0x000000, 0.8);
     this.background.fillRect(0, 0, width, height);
 
-    // Обновляем позицию и размер UI-элементов
+    // Обновляем позицию и размер элементов
     if (this.shining)
       this.shining.setPosition(width / 2, height / 2).setScale(targetScale);
 
@@ -258,10 +263,10 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
     if (this.centerText)
       this.centerText.setPosition(width / 2, height / 2).setScale(targetScale);
 
-    if (this.closeText)
-      this.closeText.setPosition(width / 2, height - 71).setScale(targetScale);
+    this.closeText.setPosition(width / 2, height - 71).setScale(targetScale);
   }
 
+  // Функция для закрытия модалки
   private closeModal() {
     // Останавливаем таймеры
     this.confettiTimers.forEach((timer) => timer.remove());
@@ -277,6 +282,7 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
     });
     this.confettiGroup = [];
 
+    // Выполняем переданную функцию, если она есть
     this.onCloseModal?.();
 
     // Уничтожаем саму модалку

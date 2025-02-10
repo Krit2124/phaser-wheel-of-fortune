@@ -9,7 +9,7 @@ export default class SpinButton extends Phaser.GameObjects.Container {
     const height = 94;
     const radius = 20;
 
-    // Отрисовка кнопки
+    // Отрисовка кнопки (для закругления краёв)
     const buttonGraphics = scene.add.graphics();
     buttonGraphics.fillStyle(0x0d42c1, 1);
     buttonGraphics.fillRoundedRect(-width / 2, -height / 2, width, height, radius);

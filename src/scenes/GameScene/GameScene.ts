@@ -8,11 +8,13 @@ import { Rewards } from '../../data';
 import { findScale } from '../../utils';
 
 export default class GameScene extends Phaser.Scene {
-  private wheel!: Wheel;
   private segments: Reward[] = Rewards;
+
+  private wheel!: Wheel;
   private header!: Header;
   private spinButton!: SpinButton;
   private modal!: RewardAndAttentionModal;
+
   private isSpinning: boolean = false;
 
   constructor() {
@@ -48,7 +50,7 @@ export default class GameScene extends Phaser.Scene {
     // Создаем Header
     this.header = new Header(this, 0, 0);
 
-    // Кнопка запуска колеса
+    // Создаём кнопку запуска колеса
     const buttonY = this.cameras.main.height - 80;
     this.spinButton = new SpinButton(this, centerX, buttonY, () => {
       if (this.header.hasAttempts() && !this.isSpinning) {
@@ -61,22 +63,23 @@ export default class GameScene extends Phaser.Scene {
       }
     });
 
-    // Колесо фортуны
+    // Создаём колесо фортуны
     this.wheel = new Wheel(this, centerX, centerY, this.segments);
 
     // Подписка на завершение вращения колеса
     this.wheel.on('spinComplete', this.finishSpin, this);
 
-    // Слушаем событие изменения размера, чтобы обновить масштаб сразу
+    // Слушаем событие изменения размера, чтобы обновить масштабирование
     window.addEventListener('resize', () => {
-      this.updateScale();
+      this.startScale();
     });
-    // Применяем масштаб при старте сцены после загрузки всех элементов
-    this.updateScale();
+
+    // Применяем масштабирование при старте сцены после загрузки всех элементов
+    this.startScale();
   }
 
   // Функция для адаптивного масштабирования
-  private updateScale() {
+  private startScale() {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
@@ -88,11 +91,8 @@ export default class GameScene extends Phaser.Scene {
 
     const { targetScale } = findScale();
 
-    // Масштабируем остальные элементы
     this.children.each((child: any) => {
       if (child.setScale) {
-        console.log(child);
-
         if (child === this.header) {
           // Для шапки применяем свои правила
           this.header.updateAfterResizing(targetScale, 116 * targetScale);
@@ -100,10 +100,11 @@ export default class GameScene extends Phaser.Scene {
           // Для модального окна применяем свои правила
           this.modal.updateAfterResizing(targetScale);
         } else {
+          // Масштабируем остальные элементы целиком
           child.setScale(targetScale);
         }
 
-        // Дополнительные правила для колеса
+        // Дополнительные правила для колеса фортуны
         if (child === this.wheel) {
           this.wheel.updateAfterResizing();
         }
@@ -114,7 +115,7 @@ export default class GameScene extends Phaser.Scene {
     this.updatePositions();
   }
 
-  // Функция для пересчёта позиций для элементов, которым это важно
+  // Функция для пересчёта позиций для всех элементов, которым это важно
   private updatePositions() {
     const centerX = this.cameras.main.width / 2;
     const centerY = this.cameras.main.height / 2;
@@ -151,30 +152,32 @@ export default class GameScene extends Phaser.Scene {
 
   // Анимация возврата элементов
   private showHeaderAndButton() {
+    // Возвращаем шапку
     this.tweens.add({
       targets: this.header,
-      y: 0, // Возвращаем на место
+      y: 0,
       duration: 300,
       ease: 'Power2',
     });
 
+    // Возвращаем кнопку
     this.tweens.add({
       targets: this.spinButton,
-      y: this.cameras.main.height - 80, // Возвращаем кнопку
+      y: this.cameras.main.height - 80,
       duration: 300,
       ease: 'Power2',
     });
   }
 
   // Обработка завершения вращения
-  finishSpin() {
+  private finishSpin() {
     this.isSpinning = false;
 
     // Определяем сегмент, на котором остановилось колесо
     const rewardSegment = this.segments[this.wheel.getCurrentSegmentIndex()];
     const reward = rewardSegment.amount !== 'Пусто' ? rewardSegment : null;
 
-    // Открываем модальное окно и после закрытия возвращаем UI
+    // Открываем модальное окно и после закрытия возвращаем Шапку и кнопку
     this.modal = new RewardAndAttentionModal(this, reward, false, () => {
       this.showHeaderAndButton();
     });

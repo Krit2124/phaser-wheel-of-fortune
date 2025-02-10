@@ -13,9 +13,8 @@ export default class Header extends Phaser.GameObjects.Container {
     super(scene, x, y);
     scene.add.existing(this);
 
-    // Загружаем количество попыток из localStorage
-    // FIXME: Ограничить тремя
-    this.attempts = parseInt(localStorage.getItem('attempts') || '99999', 10);
+    // Загружаем количество попыток из localStorage (3 - по умолчанию)
+    this.attempts = parseInt(localStorage.getItem('attempts') || '3', 10);
 
     // Создаем фон шапки
     this.headerBg = scene.add
@@ -32,7 +31,8 @@ export default class Header extends Phaser.GameObjects.Container {
       })
       .setOrigin(0.5);
 
-    // Смещение количества попыток относительно заголовка
+    // Смещение количества попыток относительно заголовка 
+    // (центр + половина ширина заголовка + отступ)
     const offsetForAttempts = this.title.x + this.title.width / 2 + 65;
 
     // Создаем фон для счетчика попыток
@@ -78,16 +78,19 @@ export default class Header extends Phaser.GameObjects.Container {
     return this.attempts > 0;
   }
 
-  // Правила для установки размеров шапки и её элементов
+  // Правила для масштабирования шапки и её элементов
   public updateAfterResizing(targetScale: number, newHeight: number) {
+    // Смещение количества попыток относительно заголовка 
+    // (центр + половина ширина заголовка + отступ)
     let offsetForAttempts =
       this.title.x + this.title.width / 2 + this.attemptsBg.width / 2 + 65;
 
-    // Проверяем, не выходит ли за границу экрана
+    // Проверяем, не выходит ли количество попыток за границу экрана
     if (offsetForAttempts > this.width - this.attemptsBg.width / 2) {
       offsetForAttempts = this.width - this.attemptsBg.width / 2;
     }
 
+    // Устанавливаем новую высоту
     this.setSize(this.scene.scale.width, newHeight);
     
     this.headerBg.setSize(this.width, newHeight);

@@ -26,7 +26,8 @@ export default class Wheel extends Phaser.GameObjects.Container {
   }
 
   private createAnimations() {
-    // Вращающееся сияние в центре (добавляется напрямую в сцену, чтобы не вращалось с колесом)
+    // Вращающееся сияние в центре
+    // (не добавляется в Wheel, чтобы не вращалось вместе с колесом)
     this.shining = this.scene.add.image(this.x, this.y, 'shining_blue');
     this.shining.setDepth(-10);
     this.scene.tweens.add({
@@ -59,7 +60,8 @@ export default class Wheel extends Phaser.GameObjects.Container {
   }
 
   private createWheel() {
-    // Указатель (добавляется напрямую в сцену, чтобы не вращалось с колесом)
+    // Указатель
+    // (не добавляется в Wheel, чтобы не вращался вместе с колесом)
     this.pointer = this.scene.add.image(this.x, this.y, 'pointer');
 
     // Отрисовка секторов
@@ -77,6 +79,7 @@ export default class Wheel extends Phaser.GameObjects.Container {
     // Добавление текста и изображений
     for (let i = 0; i < this.segments.length; i++) {
       const angle = i * this.sliceAngle;
+
       const isWhiteBackground = i % 2 === 0;
       const hasImage = this.segments[i].image !== '';
 
@@ -106,11 +109,14 @@ export default class Wheel extends Phaser.GameObjects.Container {
     }
   }
 
-  spinWheel() {
+  public spinWheel() {
     if (this.isSpinning) return;
     this.isSpinning = true;
 
-    this.startParticleEffect(3000); // Запуск частиц во время вращения
+    // Запуск частиц во время вращения
+    // (время создания частиц чуть меньше времени вращения,
+    // так как им всё равно нужно время чтобы разлететься в стороны)
+    this.startParticleEffect(3000);
 
     const randomSpins = Phaser.Math.Between(3, 5);
     const targetAngle = randomSpins * 360 + Phaser.Math.Between(0, 360);
@@ -124,9 +130,13 @@ export default class Wheel extends Phaser.GameObjects.Container {
     });
   }
 
+  // Функция для спавна синих частиц при вращении
   private startParticleEffect(duration: number) {
-    const interval = Phaser.Math.Between(50, 80); // Интервал появления частиц
-    const maxParticles = Math.ceil(duration / interval); // Сколько частиц появится за время вращения
+    // Интервал появления частиц
+    const interval = Phaser.Math.Between(50, 80);
+    // Сколько частиц появится за время вращения
+    const maxParticles = Math.ceil(duration / interval);
+
     let count = 0;
 
     const particleTimer = this.scene.time.addEvent({
@@ -144,16 +154,15 @@ export default class Wheel extends Phaser.GameObjects.Container {
     });
   }
 
+  // Спавн одной синей частицы
   private spawnParticle() {
     const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
     const distance = Phaser.Math.Between(500, 600);
 
     const particle = this.scene.add.image(this.x, this.y, 'spin_particle');
-    particle.setDepth(-1);
-    particle.setScale(Phaser.Math.FloatBetween(15, 20));
-    particle.setAlpha(1);
+    particle.setDepth(-1).setScale(Phaser.Math.FloatBetween(15, 20));
 
-    // Добавляем вращение частицы
+    // Добавляем вращение частице
     this.scene.tweens.add({
       targets: particle,
       angle: Phaser.Math.Between(-180, 180),
@@ -183,20 +192,20 @@ export default class Wheel extends Phaser.GameObjects.Container {
   }
 
   // Метод для получения индекса сегмента, на который указывает указатель
-  getCurrentSegmentIndex(): number {
+  public getCurrentSegmentIndex(): number {
     /* 
-      При создании ячеек они отсчитываются от 90 градусов по часовой стрелке.
-      При этом угол колеса отсчитывается от 0 против часовой стрелки.
+      При создании ячеек они отсчитываются от 90 градусов (или 3 часов, если сравнить с циферблатом) по часовой стрелке.
+      При этом угол колеса отсчитывается от 0 (или 12 часов) против часовой стрелки.
       Следующий код нужен для того, чтобы эти углы сошлись
     */
 
     // Нормализуем угол в диапазон 0-360
     const normalizedAngle = ((this.angle % 360) + 360) % 360;
 
-    // Инвертируем направление (отсчитываем против часовой стрелки)
+    // Инвертируем направление
     let adjustedAngle = (360 - normalizedAngle) % 360;
 
-    // Сдвигаем угол на -90° (учитываем, что первый сектор начинается с 90°)
+    // Сдвигаем угол на -90°
     adjustedAngle = (adjustedAngle - 90 + 360) % 360;
 
     // Вычисляем индекс сегмента
@@ -206,7 +215,8 @@ export default class Wheel extends Phaser.GameObjects.Container {
     return index;
   }
 
-  // Метод для позиций
+  // Правила для масштабирования сияния и указателя
+  // (они не масштабируются вместе с остальными элементами, так как не прикреплены к Wheel)
   public updateAfterResizing() {
     const centerX = this.scene.scale.width / 2;
     const centerY = this.scene.scale.height / 2;
