@@ -5,6 +5,8 @@ export default class Wheel extends Phaser.GameObjects.Container {
   private sectors: Phaser.GameObjects.Graphics;
   private sliceAngle: number;
   private isSpinning: boolean = false;
+  private pointer!: Phaser.GameObjects.Image;
+  private shining!: Phaser.GameObjects.Image;
 
   constructor(
     scene: Phaser.Scene,
@@ -24,11 +26,11 @@ export default class Wheel extends Phaser.GameObjects.Container {
   }
 
   private createAnimations() {
-    // Вращающееся сияние в центре
-    const shining = this.scene.add.image(this.x, this.y, 'shining_blue');
-    shining.setDepth(-10);
+    // Вращающееся сияние в центре (добавляется напрямую в сцену, чтобы не вращалось с колесом)
+    this.shining = this.scene.add.image(this.x, this.y, 'shining_blue');
+    this.shining.setDepth(-10);
     this.scene.tweens.add({
-      targets: shining,
+      targets: this.shining,
       angle: 360,
       duration: 16000,
       repeat: -1,
@@ -57,8 +59,8 @@ export default class Wheel extends Phaser.GameObjects.Container {
   }
 
   private createWheel() {
-    // Указатель
-    this.scene.add.image(this.x, this.y, 'pointer');
+    // Указатель (добавляется напрямую в сцену, чтобы не вращалось с колесом)
+    this.pointer = this.scene.add.image(this.x, this.y, 'pointer');
 
     // Отрисовка секторов
     for (let i = 0; i < this.segments.length; i++) {
@@ -126,14 +128,14 @@ export default class Wheel extends Phaser.GameObjects.Container {
     const interval = Phaser.Math.Between(50, 80); // Интервал появления частиц
     const maxParticles = Math.ceil(duration / interval); // Сколько частиц появится за время вращения
     let count = 0;
-  
+
     const particleTimer = this.scene.time.addEvent({
       delay: interval,
       repeat: maxParticles - 1, // Повторяем до конца анимации
       callback: () => {
         this.spawnParticle();
         count++;
-  
+
         // Останавливаем, если колесо закончит крутиться
         if (count >= maxParticles) {
           particleTimer.remove();
@@ -141,16 +143,16 @@ export default class Wheel extends Phaser.GameObjects.Container {
       },
     });
   }
-  
+
   private spawnParticle() {
     const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
     const distance = Phaser.Math.Between(500, 600);
-  
+
     const particle = this.scene.add.image(this.x, this.y, 'spin_particle');
     particle.setDepth(-1);
     particle.setScale(Phaser.Math.FloatBetween(15, 20));
     particle.setAlpha(1);
-  
+
     // Добавляем вращение частицы
     this.scene.tweens.add({
       targets: particle,
@@ -158,7 +160,7 @@ export default class Wheel extends Phaser.GameObjects.Container {
       duration: 1000,
       ease: 'Linear',
     });
-  
+
     // Анимация разлета
     this.scene.tweens.add({
       targets: particle,
@@ -174,7 +176,6 @@ export default class Wheel extends Phaser.GameObjects.Container {
       },
     });
   }
-  
 
   private onSpinComplete() {
     this.isSpinning = false;
@@ -203,5 +204,14 @@ export default class Wheel extends Phaser.GameObjects.Container {
     const index = Math.floor(adjustedAngle / segmentWidth);
 
     return index;
+  }
+
+  // Метод для позиций
+  public updateAfterResizing() {
+    const centerX = this.scene.scale.width / 2;
+    const centerY = this.scene.scale.height / 2;
+
+    this.shining.setPosition(centerX, centerY);
+    this.pointer.setPosition(centerX, centerY);
   }
 }

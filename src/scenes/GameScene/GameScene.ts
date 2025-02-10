@@ -4,43 +4,16 @@ import SpinButton from './elements/SpinButton';
 import Header from './elements/Header';
 import RewardAndAttentionModal from './elements/RewardAndAttentionModal';
 import type { Reward } from '../../types';
+import { Rewards } from '../../data';
+import { findScale } from '../../utils';
 
 export default class GameScene extends Phaser.Scene {
   private wheel!: Wheel;
-  private segments: Reward[] = [
-    { name: 'Монеты', amount: 'x25', image: 'coin' },
-    { name: 'Пусто', amount: 'Пусто', image: '' },
-    { name: 'Подарок 2 уровня', amount: 'x1', image: 'gift_2' },
-    { name: 'Подарок 3 уровня', amount: 'x1', image: 'gift_3' },
-    { name: 'Подарок 4 уровня', amount: 'x1', image: 'gift_4' },
-    { name: 'Пусто', amount: 'Пусто', image: '' },
-    { name: 'Подарок 1 уровня', amount: 'x1', image: 'gift_1' },
-    { name: 'Звезды', amount: 'x10', image: 'star' },
-  ];
-
+  private segments: Reward[] = Rewards;
   private header!: Header;
+  private spinButton!: SpinButton;
+  private modal!: RewardAndAttentionModal;
   private isSpinning: boolean = false;
-
-  // Функция для адаптивного масштабирования
-  private updateScale() {
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-
-    // Вычисляем масштаб по высоте и ширине
-    const scaleX = width < 630 ? Phaser.Math.Clamp(width / 630, 0.6, 1) : 1;
-    const scaleY = height < 890 ? Phaser.Math.Clamp(height / 890, 0.6, 1) : 1;
-
-    // Применяем минимальный из двух масштабов
-    const targetScale = Math.min(scaleX, scaleY);
-
-    // Масштабируем остальные элементы
-    this.children.each((child: any) => {
-      if (child.setScale && child !== this.header) {
-        // Не меняем масштаб для шапки
-        child.setScale(targetScale);
-      }
-    });
-  }
 
   constructor() {
     super('GameScene');
@@ -72,23 +45,19 @@ export default class GameScene extends Phaser.Scene {
     const centerX = this.cameras.main.width / 2;
     const centerY = this.cameras.main.height / 2;
 
-    // Слушаем событие изменения размера, чтобы обновить масштаб сразу
-    this.scale.on('resize', () => {
-      this.updateScale();
-    });
-
     // Создаем Header
     this.header = new Header(this, 0, 0);
 
     // Кнопка запуска колеса
     const buttonY = this.cameras.main.height - 80;
-    new SpinButton(this, centerX, buttonY, () => {
+    this.spinButton = new SpinButton(this, centerX, buttonY, () => {
       if (this.header.hasAttempts() && !this.isSpinning) {
         this.isSpinning = true;
+        this.hideHeaderAndButton();
         this.wheel.spinWheel();
         this.header.decrementAttempts();
       } else if (!this.header.hasAttempts()) {
-        new RewardAndAttentionModal(this, null, true);
+        this.modal = new RewardAndAttentionModal(this, null, true);
       }
     });
 
@@ -98,8 +67,103 @@ export default class GameScene extends Phaser.Scene {
     // Подписка на завершение вращения колеса
     this.wheel.on('spinComplete', this.finishSpin, this);
 
+    // Слушаем событие изменения размера, чтобы обновить масштаб сразу
+    window.addEventListener('resize', () => {
+      this.updateScale();
+    });
     // Применяем масштаб при старте сцены после загрузки всех элементов
     this.updateScale();
+  }
+
+  // Функция для адаптивного масштабирования
+  private updateScale() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Принудительно изменяем размер canvas
+    this.scale.resize(width, height);
+
+    // Обновляем камеру и масштабирование
+    this.cameras.main.setSize(width, height);
+
+    const { targetScale } = findScale();
+
+    // Масштабируем остальные элементы
+    this.children.each((child: any) => {
+      if (child.setScale) {
+        console.log(child);
+
+        if (child === this.header) {
+          // Для шапки применяем свои правила
+          this.header.updateAfterResizing(targetScale, 116 * targetScale);
+        } else if (child === this.modal) {
+          // Для модального окна применяем свои правила
+          this.modal.updateAfterResizing(targetScale);
+        } else {
+          child.setScale(targetScale);
+        }
+
+        // Дополнительные правила для колеса
+        if (child === this.wheel) {
+          this.wheel.updateAfterResizing();
+        }
+      }
+    });
+
+    // Обновляем позиции элементов
+    this.updatePositions();
+  }
+
+  // Функция для пересчёта позиций для элементов, которым это важно
+  private updatePositions() {
+    const centerX = this.cameras.main.width / 2;
+    const centerY = this.cameras.main.height / 2;
+
+    // Кнопка
+    if (this.spinButton) {
+      this.spinButton.setPosition(centerX, this.cameras.main.height - 80);
+    }
+
+    // Колесо
+    if (this.wheel) {
+      this.wheel.setPosition(centerX, centerY);
+    }
+  }
+
+  // Анимация скрытия элементов
+  private hideHeaderAndButton() {
+    // Шапка вверх
+    this.tweens.add({
+      targets: this.header,
+      y: -this.header.height,
+      duration: 300,
+      ease: 'Power2',
+    });
+
+    // Кнопка вниз
+    this.tweens.add({
+      targets: this.spinButton,
+      y: this.cameras.main.height + this.spinButton.height,
+      duration: 300,
+      ease: 'Power2',
+    });
+  }
+
+  // Анимация возврата элементов
+  private showHeaderAndButton() {
+    this.tweens.add({
+      targets: this.header,
+      y: 0, // Возвращаем на место
+      duration: 300,
+      ease: 'Power2',
+    });
+
+    this.tweens.add({
+      targets: this.spinButton,
+      y: this.cameras.main.height - 80, // Возвращаем кнопку
+      duration: 300,
+      ease: 'Power2',
+    });
   }
 
   // Обработка завершения вращения
@@ -108,18 +172,11 @@ export default class GameScene extends Phaser.Scene {
 
     // Определяем сегмент, на котором остановилось колесо
     const rewardSegment = this.segments[this.wheel.getCurrentSegmentIndex()];
+    const reward = rewardSegment.amount !== 'Пусто' ? rewardSegment : null;
 
-    // Если есть награда
-    if (rewardSegment.amount !== 'Пусто') {
-      const reward = {
-        name: rewardSegment.name,
-        amount: rewardSegment.amount,
-        image: rewardSegment.image,
-      };
-      new RewardAndAttentionModal(this, reward);
-    } else {
-      // Если нет награды
-      new RewardAndAttentionModal(this, null);
-    }
+    // Открываем модальное окно и после закрытия возвращаем UI
+    this.modal = new RewardAndAttentionModal(this, reward, false, () => {
+      this.showHeaderAndButton();
+    });
   }
 }

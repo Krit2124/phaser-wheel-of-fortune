@@ -1,24 +1,38 @@
 import Phaser from 'phaser';
 import type { Reward } from '../../../types';
+import { findScale } from '../../../utils';
 
 export default class RewardAndAttentionModal extends Phaser.GameObjects.Container {
   private confettiGroup: Phaser.GameObjects.Image[] = [];
   private confettiTimers: Phaser.Time.TimerEvent[] = [];
+  private onCloseModal?: () => void;
+  private background!: Phaser.GameObjects.Graphics;
+  private shining!: Phaser.GameObjects.Image;
+  private victoryImage!: Phaser.GameObjects.Image;
+  private rewardName!: Phaser.GameObjects.Text;
+  private rewardImage!: Phaser.GameObjects.Image;
+  private rewardAmount!: Phaser.GameObjects.Text;
+  private centerText!: Phaser.GameObjects.Text;
+  private closeText!: Phaser.GameObjects.Text;
 
   constructor(
     scene: Phaser.Scene,
     reward: Reward | null,
     // Параметр на случай использования модалки для уведомления о закончившихся попытках
     isOutOfAttempts = false,
+    onCloseModal?: () => void,
   ) {
     super(scene, 0, 0);
     scene.add.existing(this);
+    if (onCloseModal) {
+      this.onCloseModal = onCloseModal;
+    }
 
     // Полупрозрачный фон
-    const background = scene.add.graphics();
-    background.fillStyle(0x000000, 0.8);
-    background.fillRect(0, 0, scene.cameras.main.width, scene.cameras.main.height);
-    background.setInteractive(
+    this.background = scene.add.graphics();
+    this.background.fillStyle(0x000000, 0.8);
+    this.background.fillRect(0, 0, scene.cameras.main.width, scene.cameras.main.height);
+    this.background.setInteractive(
       new Phaser.Geom.Rectangle(
         0,
         0,
@@ -27,22 +41,22 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
       ),
       Phaser.Geom.Rectangle.Contains,
     );
-    background.on('pointerdown', () => this.closeModal());
-    this.add(background);
+    this.background.on('pointerdown', () => this.closeModal());
+    this.add(this.background);
 
     if (reward && !isOutOfAttempts) {
       // Анимация конфетти
       this.spawnConfetti(scene);
 
       // Вращающееся сияние в центре
-      const shining = scene.add.image(
+      this.shining = scene.add.image(
         scene.cameras.main.centerX,
         scene.cameras.main.centerY,
         'shining_golden',
       );
-      this.add(shining);
+      this.add(this.shining);
       scene.tweens.add({
-        targets: shining,
+        targets: this.shining,
         angle: 360,
         duration: 16000,
         repeat: -1,
@@ -50,34 +64,39 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
       });
 
       // Украшение сверху
-      const victoryImage = scene.add.image(
+      this.victoryImage = scene.add.image(
         scene.cameras.main.centerX,
-        169,
+        0,
         'victory_window',
       );
-      this.add(victoryImage);
+      this.add(this.victoryImage);
 
       // Название награды
-      const rewardName = scene.add
-        .text(scene.cameras.main.centerX, 282, reward.name, {
-          fontSize: '42px',
-          color: '#FFFFFF',
-          fontFamily: 'Baloo',
-        })
-        .setOrigin(0.5);
-      this.add(rewardName);
-
-      // Изображение награды
-      const rewardImage = scene.add
-        .image(scene.cameras.main.centerX, scene.cameras.main.centerY, reward.image)
-        .setScale(2.5);
-      this.add(rewardImage);
-
-      // Количество
-      const rewardAmount = scene.add
+      this.rewardName = scene.add
         .text(
           scene.cameras.main.centerX,
-          scene.cameras.main.centerY + 139,
+          this.victoryImage.displayHeight * 0.83,
+          reward.name,
+          {
+            fontSize: '42px',
+            color: '#FFFFFF',
+            fontFamily: 'Baloo',
+          },
+        )
+        .setOrigin(0.5);
+      this.add(this.rewardName);
+
+      // Изображение награды
+      this.rewardImage = scene.add
+        .image(scene.cameras.main.centerX, scene.cameras.main.centerY, reward.image)
+        .setScale(2.5);
+      this.add(this.rewardImage);
+
+      // Количество
+      this.rewardAmount = scene.add
+        .text(
+          scene.cameras.main.centerX,
+          scene.cameras.main.centerY + this.rewardImage.displayHeight,
           `${reward.amount}`,
           {
             fontSize: '42px',
@@ -88,14 +107,14 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
         )
         .setOrigin(0.5)
         .setStroke('#00377D', 6);
-      this.add(rewardAmount);
+      this.add(this.rewardAmount);
     } else {
       // Текстовое сообщение в центре (для пустого слота или окончания попыток)
       const messageText = isOutOfAttempts
         ? 'У вас закончились\nпопытки'
         : 'Вы ничего не\nвыиграли. Повезет в\nследующий раз';
 
-      const centerText = scene.add
+      this.centerText = scene.add
         .text(scene.cameras.main.centerX, scene.cameras.main.centerY, messageText, {
           fontSize: '32px',
           color: '#FFFFFF',
@@ -105,11 +124,11 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
         })
         .setOrigin(0.5)
         .setStroke('#00377D', 6);
-      this.add(centerText);
+      this.add(this.centerText);
     }
 
     // Надпись о возможности закрытия
-    const closeText = scene.add
+    this.closeText = scene.add
       .text(
         scene.cameras.main.centerX,
         scene.cameras.main.height - 71,
@@ -123,9 +142,14 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
       )
       .setOrigin(0.5)
       .setStroke('#00377D', 6);
-    closeText.setInteractive();
-    closeText.on('pointerdown', () => this.closeModal());
-    this.add(closeText);
+    this.closeText.setInteractive();
+    this.closeText.on('pointerdown', () => this.closeModal());
+    this.add(this.closeText);
+
+    // Применяем изменения для адаптивности
+    const { targetScale } = findScale();
+
+    this.updateAfterResizing(targetScale);
   }
 
   private spawnConfetti(scene: Phaser.Scene) {
@@ -201,6 +225,43 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
     confetti.setData('swingTween', swingTween);
   }
 
+  public updateAfterResizing(targetScale: number) {
+    const { width, height } = this.scene.scale;
+
+    // Обновляем фон
+    this.background.clear();
+    this.background.fillStyle(0x000000, 0.8);
+    this.background.fillRect(0, 0, width, height);
+
+    // Обновляем позицию и размер UI-элементов
+    if (this.shining)
+      this.shining.setPosition(width / 2, height / 2).setScale(targetScale);
+
+    if (this.victoryImage) {
+      this.victoryImage.setScale(targetScale);
+      this.victoryImage.setPosition(width / 2, this.victoryImage.displayHeight / 2);
+    }
+
+    if (this.rewardName)
+      this.rewardName
+        .setPosition(width / 2, this.victoryImage.displayHeight * 0.83)
+        .setScale(targetScale);
+
+    if (this.rewardImage)
+      this.rewardImage.setPosition(width / 2, height / 2).setScale(2.5 * targetScale);
+
+    if (this.rewardAmount)
+      this.rewardAmount
+        .setPosition(width / 2, height / 2 + this.rewardImage.displayHeight)
+        .setScale(targetScale);
+
+    if (this.centerText)
+      this.centerText.setPosition(width / 2, height / 2).setScale(targetScale);
+
+    if (this.closeText)
+      this.closeText.setPosition(width / 2, height - 71).setScale(targetScale);
+  }
+
   private closeModal() {
     // Останавливаем таймеры
     this.confettiTimers.forEach((timer) => timer.remove());
@@ -215,6 +276,8 @@ export default class RewardAndAttentionModal extends Phaser.GameObjects.Containe
       confetti.destroy();
     });
     this.confettiGroup = [];
+
+    this.onCloseModal?.();
 
     // Уничтожаем саму модалку
     this.destroy(true);
