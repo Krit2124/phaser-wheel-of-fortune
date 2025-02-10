@@ -12,7 +12,8 @@ export default class Header extends Phaser.GameObjects.Container {
     const headerHeight = 116;
 
     // Загружаем количество попыток из localStorage
-    this.attempts = parseInt(localStorage.getItem("attempts") || "3", 10);
+    // FIXME: Ограничить тремя
+    this.attempts = parseInt(localStorage.getItem("attempts") || "99999", 10);
 
     // Создаем фон шапки
     const headerBg = scene.add.rectangle(0, 0, sceneWidth, headerHeight, 0xffffff).setOrigin(0, 0);
